@@ -11,10 +11,13 @@ const welcome = {
 
 function App() {
   const stories = ["donkey ballz", "donkey teeth", "donkey tail"];
+  const [searchTerm, setSearchTerm] = React.useState(localStorage.getItem("search") || "");
 
-  const [searchTerm, setSearchTerm] = React.useState("");
+  React.useEffect(()=> {
+    localStorage.setItem("search",searchTerm);
+  }, [searchTerm]);
 
-  const handleChange = event => {
+  const handleSearch = event => {
     setSearchTerm(event.target.value);
   }
 
@@ -25,7 +28,7 @@ function App() {
   return (
     <div className="App">
       <h1>{welcome.greeting} {welcome.title}</h1>
-      <Search handleChange={handleChange}/>
+      <Search searchTerm={searchTerm} handleChange={handleSearch}/>
         <List list={searchResults}/>
         <p>
       </p>
@@ -39,7 +42,7 @@ function Search(props) {
   return (
     <div>
       <label htmlFor="search">Search: </label>
-      <input id="search" type="text" onChange={props.handleChange}/>
+      <input id="search" type="text" onChange={props.handleChange} value={props.searchTerm}/>
     </div>
   )
 }
