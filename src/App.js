@@ -1,8 +1,6 @@
-import logo from './logo.svg';
+
 import './App.css';
 import React from 'react';
-
-const title = "React APP";
 
 const welcome = {
   greeting: "HEY",
@@ -18,10 +16,42 @@ const useSemiPersitentState = (key, initialValue) => {
   return [value, setValue];
 };
 
+const initialStories = ["donkey ballz", "donkey teeth", "donkey tail"];
 
+const getAsyncStories = () => 
+  new Promise(resolve =>
+    setTimeout(
+      ()=> resolve({data: {stories: initialStories}}),
+      2000
+    )
+  );
+
+  
+  
+ 
 function App() {
-  const stories = ["donkey ballz", "donkey teeth", "donkey tail"];
+  const [stories, setStories] = React.useState([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [isError, setIsError] = React.useState(false);
 
+  React.useEffect(()=> {
+    setIsLoading(true);
+    getAsyncStories().then(result => {
+      setStories(result.data.stories);
+      setIsLoading(false);
+    }).catch(
+      () => setIsError(true)
+    );
+  }, [])
+
+  const handleRemoveStory = item => {
+    const newStories =  stories.filter(
+      story => item !== story
+    );
+
+    setStories(newStories);
+
+  };
 
   const [searchTerm, setSearchTerm] = useSemiPersitentState('search', 'Dogs');
 
@@ -41,17 +71,34 @@ function App() {
               handleChange={handleSearch}
               id="search"
               type="text"
+              isFocused
         >
           Search:
         </InputWithLabel>
-        <List list={searchResults}/>
+
+        {isError && <p>Something went wrong ...</p>}
+
+        {isLoading? (
+          <p>Loading</p>
+        ) : (
+        <List list={searchResults} onRemoveItem={handleRemoveStory}/>
+        )}
         <p>
       </p>
     </div>
   );
 }
 
-function InputWithLabel({value, handleChange, id, label, type, children}) {
+function InputWithLabel({value, handleChange, id, label, type, children, isFocused}) {
+  // ref for focus
+  const inputRef = React.useRef();
+
+  React.useEffect(()=> {
+    if (isFocused &&  inputRef.current){
+      inputRef.current.focus();
+    }
+  }, [isFocused]);
+
   return (
     <>
       <label htmlFor={id}>{children}</label>
@@ -61,14 +108,39 @@ function InputWithLabel({value, handleChange, id, label, type, children}) {
         type={type}
         onChange={handleChange} 
         value={value}
+        ref={inputRef}
       />
     </>
   )
 }
 
-const List = props =>
-  props.list.map(item => (
-    <h2>{item}</h2>
-  ));
+function List ({list, onRemoveItem}) {
+  return (list.map((item, index) => (
+    <Item 
+      key={index}
+      item={item}
+      onRemoveItem={onRemoveItem}
+    />
+  )));
+  
+}
+
+function Item({item, onRemoveItem}){
+
+  const handleRemoveItem = () => {
+    onRemoveItem(item);
+  };
+
+  return(
+    <>
+      <h1>{item}</h1>
+      <span>
+        <button type="button" onClick={handleRemoveItem}>
+          Dismiss
+        </button>
+      </span>
+    </>
+  )
+}
 
 export default App;
