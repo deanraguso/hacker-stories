@@ -26,31 +26,77 @@ const getAsyncStories = () =>
     )
   );
 
-  
+const storiesReducer = (state, action) => {
+  switch (action.type) {
+    case 'STORIES_FETCH_INIT':
+      return {
+        ...state,
+        isLoading: true,
+        isError: false
+      }
+
+    case 'STORIES_FETCH_SUCCESS':
+      return{
+        ...state,
+        isLoading: false,
+        isError: false,
+        data: action.payload,
+      }
+
+    case 'STORIES_FETCH_FAILURE':
+      return{
+        ...state,
+        isLoading: false,
+        isError: true
+      }
+
+    case 'REMOVE_STORY':
+      return {
+        ...state,
+        data: state.data.filter(
+          story => action.payload.objectID !== story.objectID
+        )
+      }
+
+    default:
+      throw new Error();
+  }
+}
   
  
 function App() {
-  const [stories, setStories] = React.useState([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [isError, setIsError] = React.useState(false);
+  // const [stories, setStories] = React.useState([]);
+
+  const [stories, dispatchStories] = React.useReducer(
+    storiesReducer,
+    {data: [], isLoading: false, isError: false}
+  );
 
   React.useEffect(()=> {
-    setIsLoading(true);
+    
+    dispatchStories({type: 'STORIES_FETCH_INIT'})
+
     getAsyncStories().then(result => {
-      setStories(result.data.stories);
-      setIsLoading(false);
+      // setStories(result.data.stories);
+      dispatchStories({
+        type: 'STORIES_FETCH_SUCCESS',
+        payload: result.data.stories
+      });
     }).catch(
-      () => setIsError(true)
+      dispatchStories({type: 'STORIES_FETCH_FAILURE'})
     );
   }, [])
 
   const handleRemoveStory = item => {
-    const newStories =  stories.filter(
-      story => item !== story
-    );
+    // const newStories =  stories.filter(
+    //   story => item !== story
+    // );
 
-    setStories(newStories);
-
+    // setStories(newStories);
+    dispatchStories({
+      type:"REMOVE_STORY",
+      payload: item,
+    });
   };
 
   const [searchTerm, setSearchTerm] = useSemiPersitentState('search', 'Dogs');
@@ -59,7 +105,7 @@ function App() {
     setSearchTerm(event.target.value);
   }
 
-  const searchResults = (stories.filter(function(story){
+  const searchResults = (stories.data.filter(function(story){
     return story.toLowerCase().includes(searchTerm.toLowerCase());
   }));
 
@@ -76,9 +122,9 @@ function App() {
           Search:
         </InputWithLabel>
 
-        {isError && <p>Something went wrong ...</p>}
+        {stories.isError && <p>Something went wrong ...</p>}
 
-        {isLoading? (
+        {stories.isLoading? (
           <p>Loading</p>
         ) : (
         <List list={searchResults} onRemoveItem={handleRemoveStory}/>
